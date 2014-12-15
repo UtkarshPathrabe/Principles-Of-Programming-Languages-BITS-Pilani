@@ -1,0 +1,17 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-advanced-reader.ss" "lang")((modname Currying) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ())))
+(define curry2 (λ(f) (λ(x) (λ(y) (f x y)))))
+(define multiply (curry2 *))
+(define double (multiply 2))
+(define triple (multiply 3))
+(define plus (curry2 +))
+(define subtract (curry2 -))
+(define divide (curry2 /))
+(define sucessor (plus 1))
+(define predecessor (subtract 1))
+(define DivBy5 (divide 5))
+(define curry3 (λ(f) (λ(x) (λ(y) (λ(z) (f x y z))))))
+(define mul3 (curry3 *))
+(define double3 (mul3 2))
+(define fourTimes (double3 2))
