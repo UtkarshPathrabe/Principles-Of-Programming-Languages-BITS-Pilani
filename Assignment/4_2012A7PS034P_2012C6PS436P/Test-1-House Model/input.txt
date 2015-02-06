@@ -1,0 +1,155 @@
+#***********************************ABSTRACT TYPE INITIALIZATION*************************************
+
+ABSTRACT_TYPE HOUSE						#Defining Abstract DataTypes for holding concrete objects
+ABSTRACT_TYPE FLOOR
+ABSTRACT_TYPE ROOM
+ABSTRACT_TYPE GARDEN
+
+#***********************************CLASS INTIALIZATION**********************************************
+
+CLASS ELECTRONIC:						#Defining CLASSes which TYPEs can inherit
+	_State LIST[ON,OFF]
+	SwitchOn
+	SwitchOff
+	
+CLASS MOBILE:
+	_Position ABSTRACT_TYPE
+	Goto _
+
+#*************************************TYPE INITIALIZATION**********************************************
+
+TYPE FAN: ELECTRONIC						#Defining concrete objects
+	_Speed INTEGER
+	SpeedUp
+	SpeedDown
+
+TYPE LAMP: ELECTRONIC
+
+TYPE DOOR:
+	_DoorState LIST[OPEN,CLOSE]
+	Open
+	Close
+
+TYPE ALARM: ELECTRONIC
+	RingOn
+	RingOff
+
+TYPE CLEANER: ELECTRONIC,MOBILE
+	StartCleaning
+
+TYPE TV: ELECTRONIC
+	_ChannelNumber INTEGER
+	_VolumeLevel INTEGER
+	ChannelUp
+	ChannelDown
+	VolumeUp
+	VolumeDown
+
+TYPE FIRE_DETECTOR: ELECTRONIC
+	_Temperature REAL
+	GetTemperature
+
+
+TYPE PRESENCE_DETECTOR: ELECTRONIC
+	_Presence LIST[HUMAN_PRESENT,NO_HUMAN,OWNER]
+	GetPresence
+
+TYPE LIGHT_DETECTOR: ELECTRONIC
+	_LightIntensity REAL
+	GetLightIntensity
+
+#*************************************DEFINING MAIN ARCHITECTURE**********************************************
+
+HOUSE: MyHouse							#Initializing Architecture of House
+	DOOR: Main_gate						#HOUSE has one main gate 
+	PRESENCE_DETECTOR: Owner_detect				#HOUSE has a sensor which can detect presence
+	CLEANER: Cleaner1 					#HOUSE has one cleaner named as Cleaner1
+	FLOOR: Top_floor					#HOUSE has a Top floor
+		DOOR: Door1					#Top floor has one door1
+		ROOM: Hall 					#Top floor has one hall
+			DOOR: Door1,Door2			#Hall has two doors one links it to Top floor entry and other to Kitchen
+			FAN: Fan1,Fan2						
+			LAMP: Tubelight,Bulb
+			TV: LG_tv
+			PRESENCE_DETECTOR: Human_detect
+		ROOM: Kitchen
+			DOOR: Door2
+			FAN: Fan1
+			LAMP: Cfl
+			FIRE_DETECTOR: Fire_detect
+			PRESENCE_DETECTOR: Human_detect
+			ALARM: Alm1
+	FLOOR: Ground_floor
+		DOOR: Door3
+		ROOM: Dining_room
+			DOOR: Door3,Door4
+			FAN: Fan1
+			LAMP: Tubelight
+			PRESENCE_DETECTOR: Human_detect
+		ROOM: Common_room
+			DOOR: Door4
+			FAN: Fan1
+			LAMP: Bulb
+			PRESENCE_DETECTOR: Human_detect
+	GARDEN: Front_garden
+		LIGHT_DETECTOR: Daytime_detect
+		LAMP: Bulb(4)								#Garden has 4 bulbs
+
+#*************************************AUTOMATING PROCESSES**********************************************
+
+#Programs the fire sensor installed in kitchen to get temperature (in degree Fahrenheit) from surroundings after every 500ms and raise alarm if temperature is greater than 70 degree Celsius.
+AUTOMATE FIRE_DETECTION: Kitchen @ 500
+	Fire_detect GetTemperature
+	IF Fire_detect _Temperature > 30 THEN
+		Alm1 RingOn
+	ENDIF
+ENDAUTOMATE
+
+#Programs the presence sensor of all rooms of top floor and ground floor to get information about surroundings after every 1sec and switch off all electronic devices if no human is present in that room
+AUTOMATE PRESENCE_DETECTION: Top_floor,Ground_floor @ 1000
+	<PRESENCE_DETECTOR> GetPresence
+	IF PRESENCE_DETECTOR _Presence = NO_HUMAN THEN
+		|ELECTRONIC| SwitchOff
+	ENDIF
+ENDAUTOMATE
+
+#Programs the presence sensor installed outside the house to get information about surroundings after every 1sec and opens the main gate if detects the presence of owner.
+AUTOMATE ENTRY_DETECTION: HOUSE @ 1000
+	Owner_detect GetPresence
+	IF Owner_detect _Presence = OWNER THEN
+		Main_gate Open
+	ENDIF
+ENDAUTOMATE
+
+#Programs the light sensor to get light intensity of surrounding after every half hour and turn off garden lights if its day else switch them ON if its night
+AUTOMATE GARDEN_LIGHTS: Front_garden @ 600000
+	Daytime_detect GetLightIntensity
+	IF Daytime_detect _LightIntensity < 100 THEN
+		<LAMP> SwitchOn
+	ELSE
+		<LAMP> SwitchOff
+	ENDIF
+ENDAUTOMATE
+
+#********************************COMMAND LINE INSTRUCTIONS *************************************
+
+COMMAND: Open Main_gate								#It will open the Main_gate
+
+COMMAND: Open <DOOR> EXCEPT Main_gate						#It will open all doors except Main_gate
+
+COMMAND: Open <DOOR> BETWEEN Hall,Kitchen    					#Among all doors it will open door between Hall and Kitchen 
+
+COMMAND: Open <DOOR> IN Ground_floor						#Opens all doors of Ground floor
+
+COMMAND: Cleaner1 SwitchOn AND Goto Hall AND StartCleaning			#Will command cleaner1 to turn on goto hall and start cleaning
+
+COMMAND: |ELECTRONIC| SwitchOff							#Will switch off all electronic equipments in the house
+
+COMMAND:									#Opens all doors of the house except the main gate
+	FOR X IN MyHouse-> <DOOR> DO
+		IF X = MyHouse->Main_gate THEN
+			X Close
+		ELSE
+			X Open
+		ENDIF
+	ENDFOR

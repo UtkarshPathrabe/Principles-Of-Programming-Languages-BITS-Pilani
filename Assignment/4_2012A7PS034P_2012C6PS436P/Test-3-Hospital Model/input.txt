@@ -1,0 +1,184 @@
+#***********************************ABSTRACT  TYPE INITIALIZATION*************************************
+
+ABSTRACT_TYPE HOSPITAL
+ABSTRACT_TYPE FLOOR
+ABSTRACT_TYPE WARD
+
+#***********************************CLASS INTIALIZATION**********************************************
+
+CLASS ELECTRONIC:				#Defining class electronic
+	_State LIST[ON, OFF]			#Stores the state of the electronic gadget as either ON or OFF
+	SwitchOn				#Switches on the electronic gadget
+	SwitchOff					#Switches off the electronic gadget
+
+#*************************************TYPE INITIALIZATION**********************************************
+
+TYPE FAN: ELECTRONIC				#Defining type fan of electronic class
+	_Speed INTEGER				#Stores the speed of the fan which is an integer
+	SpeedUp					#Speeds up the fan
+	SpeedDown				#Speeds down the fan
+
+TYPE LAMP: ELECTRONIC				#Defining type lamp of electronic class
+
+TYPE DOOR:					#Defining type door
+	_State LIST[OPEN, CLOSE]		#Stores the state of door either OPEN or CLOSE
+	Open					#Opens the door
+	Close					#Closes the door
+
+TYPE TV: ELECTRONIC				#Defining type television of electronic class
+	_ChannelNumber INTEGER			#Stores current channel of tv
+	_VolumeLevel INTEGER			#Stores current volume level of tv
+	ChannelUp				#Increases the channel number by 1
+	ChannelDown				#Decreases the channel number by 1
+	VolumeUp				#Increases the volume level by 1
+	VolumeDown				#Decreases the volume level by 1
+
+TYPE FIRE_DETECTOR: ELECTRONIC			#Defining type fire sensor of electronic class
+	_Temperature REAL			#Stores the temperature detected by sensor
+	GetTemperature				#Gets the temperature from surroundings
+
+TYPE ALARM: ELECTRONIC 				#Defining type alarm of electronic class
+	RingOn 					#Rings the alarm
+	RingOff 				#Stops the ringing of alarm
+
+TYPE PRESENCE_SENSOR: ELECTRONIC		#Defining type presence sensor of electronic class
+	_Presence LIST[HUMAN_PRESENT, NO_HUMAN]		#Stores information about surroundings
+	GetPresence				#Gets information about surroundings
+
+TYPE LIGHT_SENSOR: ELECTRONIC			#Defining type light sensor of electronic class
+	_LightIntensity REAL			#Stores the light intensity detected
+	GetLightIntensity			#Gets the light intensity from surroundings
+
+TYPE SPRINKLERS: ELECTRONIC			#Defining type sprinklers of electronic class
+	SprinkleOn				#Turns the sprinklers on
+	SprinkleOff				#Turns the sprinklers off
+
+#*************************************DEFINING MAIN ARCHITECTURE**********************************************
+
+HOSPITAL: Wockhart
+	DOOR: Main_gate
+	LAMP: OutsideLights
+	PRESENCE_SENSOR: Person_Detect
+	LIGHT_SENSOR: Daytime_detect
+	FIRE_DETECTOR: Fire_detect_main
+	SPRINKLERS: Sprinkle
+	ALARM: Alarm1
+	FLOOR: Ground_floor
+		FIRE_DETECTOR: Fire_detect_GF
+		SPRINKLERS: Sprinkle_GF
+		ALARM: Alarm2
+		WARD: Hall
+			DOOR: Main_Door
+			FAN: Fan1, Fan2, Fan3
+			LAMP: Tubelight1, Tubelight2, Bulb1, Bulb2, Bulb3, Bulb4
+			TV: Television
+			PRESENCE_SENSOR: Presence_Hall
+			FIRE_DETECTOR: Fire_detect_Hall
+			SPRINKLERS: Sprinkle_Hall
+		WARD: Ward101
+			DOOR: Door_101
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_101
+			FIRE_DETECTOR: Fire_detect_101
+			SPRINKLERS: Sprinkle_101
+		WARD: Ward102
+			DOOR: Door_102
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_102
+			FIRE_DETECTOR: Fire_detect_102
+			SPRINKLERS: Sprinkle_102
+		WARD: Ward103
+			DOOR: Door_103
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_103
+			FIRE_DETECTOR: Fire_detect_103
+			SPRINKLERS: Sprinkle_103
+		WARD: Ward104
+			DOOR: Door_104
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_104
+			FIRE_DETECTOR: Fire_detect_104
+			SPRINKLERS: Sprinkle_104
+	FLOOR: First_floor
+		FIRE_DETECTOR: Fire_detect_FF
+		SPRINKLERS: Sprinkle_FF
+		ALARM: Alarm3
+		WARD: Ward201
+			DOOR: Door_201
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_201
+			FIRE_DETECTOR: Fire_detect_201
+			SPRINKLERS: Sprinkle_201
+		WARD: Ward202
+			DOOR: Door_202
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_202
+			FIRE_DETECTOR: Fire_detect_202
+			SPRINKLERS: Sprinkle_202
+		WARD: Ward203
+			DOOR: Door_203
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_203
+			FIRE_DETECTOR: Fire_detect_203
+			SPRINKLERS: Sprinkle_203
+		WARD: Ward204
+			DOOR: Door_204
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_204
+			FIRE_DETECTOR: Fire_detect_204
+			SPRINKLERS: Sprinkle_204
+
+#*************************************AUTOMATING PROCESSES**********************************************
+
+#Programs the presence sensor of all wards of first floor and ground floor to get information about surroundings after every 1sec and switch off all electronic devices if no human is present in that room
+AUTOMATE PRESENCE_DETECTION: First_floor, Ground_floor @ 1000
+	<PRESENCE_SENSOR> GetPresence
+	IF PRESENCE_DETECTOR _Presence = NO_HUMAN THEN
+		|ELECTRONIC| SwitchOff
+	ENDIF
+ENDAUTOMATE
+
+#Programs the light sensor to get light intensity of surrounding after every half hour and turn off outside lights if its day, else switch them ON if its night
+AUTOMATE OUTSIDE_LIGHTS: Wockhart @ 1800000
+	Daytime_detect GetLightIntensity
+	IF Daytime_detect _LightIntensity < 100 THEN
+		OutsideLights SwitchOn
+	ELSE
+		OutsideLights SwitchOff
+	ENDIF
+ENDAUTOMATE
+
+#Programs the fire sensors installed in Hospital to get temperature (in degree Celsius) from surroundings after every 500ms and raises alarm and sprinkles water, if temperature is greater than 70 degree Celsius.
+AUTOMATE FIRE_DETECTION: Wockhart, Ground_floor, First_floor, Hall, Ward101, Ward102, Ward103, Ward104, Ward201, Ward202, Ward203, Ward204 @ 500
+	<FIRE_DETECTOR> GetTemperature
+	REAL X <- <FIRE_DETECTOR> -> _Temperature
+	IF X > 70 THEN
+		<ALARM> RingOn
+		<SPRINKLERS> SprinkleOn
+	ELSE
+		<ALARM> RingOff
+		<SPRINKLERS> SprinkleOff
+	ENDIF
+ENDAUTOMATE
+
+#Programs the presence sensor installed outside the hospital to get information about surroundings after every 100ms and opens the main gate if detects the presence of human.
+AUTOMATE ENTRY_DETECTION: Wockhart @ 100
+	Person_detect GetPresence
+	IF Person_detect _Presence = HUMAN_PRESENT THEN
+		Main_gate Open
+	ENDIF
+ENDAUTOMATE
+
+#********************************COMMAND LINE INSTRUCTIONS *************************************
+
+COMMAND: First_floor -> <WARD> -> <FAN> SwitchOff
+
+COMMAND: Television SwitchOn 

@@ -1,0 +1,110 @@
+#***********************************ABSTRACT  TYPE INITIALIZATION*************************************
+
+ABSTRACT_TYPE PRISON
+ABSTRACT_TYPE FLOOR
+ABSTRACT_TYPE CELL
+
+#***********************************CLASS INTIALIZATION**********************************************
+
+CLASS ELECTRONIC:						
+	_State LIST[ON, OFF]		
+	SwitchOn					
+	SwitchOff
+
+#*************************************TYPE INITIALIZATION**********************************************
+
+TYPE FAN: ELECTRONIC
+	_Speed INTEGER			
+	SpeedUp				
+	SpeedDown
+
+TYPE LAMP: ELECTRONIC
+
+TYPE DOOR: 								#Defining type door class
+	_DoorState LIST[OPEN, CLOSE]					#Stores the state of door either OPEN or CLOSE
+	Open								#Opens the door
+	Close								#Closes the door
+
+TYPE ALARM: ELECTRONIC
+	RingOn
+	RingOff
+
+TYPE FENCE_BREAK_DETECT: ELECTRONIC
+	_FenceInfo INTEGER
+	GetFenceInfo
+	
+TYPE PRESENCE_SENSOR: ELECTRONIC					#Defining type presence detector of electronic type
+	_Presence LIST[HUMAN_PRESENT, NO_HUMAN, OWNER]			#Stores information about surroundings
+	GetPresence							#Gets information about surroundings
+
+TYPE LIGHT_SENSOR: ELECTRONIC						#Defining type light detector of electronic type
+	_LightIntensity REAL						#Stores the light intensity detected
+	GetLightIntensity						#Gets the light intensity from surroundings
+
+#*************************************DEFINING MAIN ARCHITECTURE**********************************************
+
+PRISON: Prison_house
+	DOOR: Main_gate
+	LAMP: OutsideLights
+	ALARM: Prison_alarm
+	LIGHT_SENSOR: Daytime_detect
+	FENCE_BREAK_DETECT: Fence_break
+	FLOOR: Ground_floor
+		CELL: Cell_1
+			DOOR: Door_1
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_1
+		CELL: Cell_2
+			DOOR: Door_2
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_2
+		CELL: Cell_3
+			DOOR: Door_3
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_3
+		CELL: Cell_4
+			DOOR: Door_4
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_4
+		CELL: Cell_5
+			DOOR: Door_5
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_5
+
+#*************************************AUTOMATING PROCESSES**********************************************
+
+AUTOMATE PRESENCE_DETECTION: Ground_floor @ 1000
+	<PRESENCE_SENSOR> GetPresence
+	IF PRESENCE_DETECTOR _Presence = NO_HUMAN THEN
+		Prison_alarm RingOn
+	ELSE
+		Prison_alarm RingOff
+	ENDIF
+ENDAUTOMATE				
+
+AUTOMATE OUTSIDE_LIGHTS: Prison_house @ 1800000
+	Daytime_detect GetLightIntensity
+	IF Daytime_detect _LightIntensity < 100 THEN
+		OutsideLights SwitchOn
+	ELSE
+		OutsideLights SwitchOff
+	ENDIF
+ENDAUTOMATE
+
+AUTOMATE ALARM_WHEN_FENCE_BREAK: Prison_house @1000
+	Fence_break GetFenceInfo
+	IF _FenceInfo = 0 THEN
+		Prison_alarm RingOn
+	ELSE
+		Prison_alarm RingOff
+	ENDIF
+ENDAUTOMATE
+
+#********************************COMMAND LINE INSTRUCTIONS *************************************
+
+COMMAND: <DOOR> Close AND |ELECTRONIC| SwitchOff 

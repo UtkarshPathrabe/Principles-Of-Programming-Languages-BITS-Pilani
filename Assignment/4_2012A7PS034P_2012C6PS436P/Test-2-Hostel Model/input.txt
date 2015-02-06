@@ -1,0 +1,179 @@
+#***********************************ABSTRACT TYPE INITIALIZATION*************************************
+
+ABSTRACT_TYPE HOSTEL
+ABSTRACT_TYPE FLOOR
+ABSTRACT_TYPE ROOM
+
+#***********************************CLASS INTIALIZATION**********************************************
+
+CLASS ELECTRONIC:						
+	_State LIST[ON, OFF]		
+	SwitchOn					
+	SwitchOff
+
+#*************************************TYPE INITIALIZATION**********************************************
+
+TYPE FAN: ELECTRONIC
+	_Speed INTEGER			
+	SpeedUp				
+	SpeedDown
+
+TYPE LAMP: ELECTRONIC,ELECTRONIC
+
+TYPE DOOR: 					#Defining type door class
+	_DoorState LIST[OPEN, CLOSE]		#Stores the state of door either OPEN or CLOSE
+	Open					#Opens the door
+	Close	
+
+TYPE TV: ELECTRONIC				#Defining type television of electronic class
+	_ChannelNumber INTEGER			#Stores current channel of tv
+	_VolumeLevel INTEGER			#Stores current volume level of tv
+	ChannelUp				#Increases the channel number by 1
+	ChannelDown				#Decreases the channel number by 1
+	VolumeUp				#Increases the volume level by 1
+	VolumeDown				#Decreases the volume level by 1
+	
+TYPE COOLER: ELECTRONIC
+	_FanSpeed INTEGER
+	_WaterLevel	REAL
+	_PumpState LIST[ON, OFF]
+	SpeedUp
+	SpeedDown
+	PumpOn
+	PumpOff
+
+TYPE ELECTRIC_LOAD_SENSOR: ELECTRONIC
+	_ElectricLoad REAL
+	GetElectricLoad
+
+TYPE PRESENCE_SENSOR: ELECTRONIC			#Defining type presence detector of electronic type
+	_Presence LIST[HUMAN_PRESENT, NO_HUMAN, OWNER]	#Stores information about surroundings
+	GetPresence					#Gets information about surroundings
+
+TYPE LIGHT_SENSOR: ELECTRONIC				#Defining type light detector of electronic type
+	_LightIntensity REAL				#Stores the light intensity detected
+	GetLightIntensity				#Gets the light intensity from surroundings
+
+TYPE TEMP_SENSOR: ELECTRONIC
+	_Temperature REAL
+	GetTemperature
+
+TYPE SOLAR_HEATER: ELECTRONIC
+
+#*************************************DEFINING MAIN ARCHITECTURE**********************************************
+
+HOSTEL: Gandhi_bhawan
+	DOOR: Main_gate
+	LAMP: OutsideLights
+	LIGHT_SENSOR: Daytime_detect
+	TEMP_SENSOR: Temp_detect
+	SOLAR_HEATER: Solar_heater
+	FLOOR: Ground_floor
+		ROOM: Room101
+			DOOR: Door_101
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_101
+			ELECTRIC_LOAD_SENSOR: ELoad_101
+		ROOM: Room102
+			DOOR: Door_102
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_102
+			ELECTRIC_LOAD_SENSOR: ELoad_102
+		ROOM: Room103
+			DOOR: Door_103
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_103
+			ELECTRIC_LOAD_SENSOR: ELoad_103
+		ROOM: Room104
+			DOOR: Door_104
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_104
+			ELECTRIC_LOAD_SENSOR: ELoad_104
+	FLOOR: Top_floor
+		ROOM: Common_room
+			DOOR: Door_common1,Door_common2
+			FAN: Fan1,Fan2,Fan3
+			COOLER: Cooler
+			TV: LG_Tv
+			LAMP: Tube1,Tube2,Bulb
+			PRESENCE_SENSOR: Presence_common
+		ROOM: Room201
+			DOOR: Door_201
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_201
+			ELECTRIC_LOAD_SENSOR: ELoad_201
+		ROOM: Room202
+			DOOR: Door_202
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_202
+			ELECTRIC_LOAD_SENSOR: ELoad_202
+		ROOM: Room203
+			DOOR: Door_203
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_203
+			ELECTRIC_LOAD_SENSOR: ELoad_203
+		ROOM: Room204
+			DOOR: Door_204
+			FAN: Fan
+			LAMP: Tubelight, Bulb
+			PRESENCE_SENSOR: Presence_204
+			ELECTRIC_LOAD_SENSOR: ELoad_204
+
+#*************************************AUTOMATING PROCESSES**********************************************
+
+AUTOMATE PRESENCE_DETECTION: Top_floor,Ground_floor @ 1000
+	<PRESENCE_SENSOR> GetPresence
+	IF PRESENCE_DETECTOR _Presence = NO_HUMAN THEN
+		|ELECTRONIC| SwitchOff
+	ENDIF
+ENDAUTOMATE				
+
+AUTOMATE SOLAR_CONTROL: Gandhi_bhawan @ 500	
+	Temp_detect GetTemperature
+	REAL X <- Temp_detect->_Temperature
+	IF X < 15 THEN
+		Solar_heater SwitchOn
+	ELSEIF X > 30 THEN
+		Solar_heater SwitchOff
+	ENDIF
+ENDAUTOMATE
+
+AUTOMATE OUTSIDE_LIGHTS: Gandhi_bhawan @ 1800000
+	Daytime_detect GetLightIntensity
+	IF Daytime_detect _LightIntensity < 100 THEN
+		OutsideLights SwitchOn
+	ELSE
+		OutsideLights SwitchOff
+	ENDIF
+ENDAUTOMATE
+
+AUTOMATE ELECTRIC_LOAD_DETECTION: Gandhi_bhawan @ 50000
+	FOR X IN <ELECTRIC_LOAD_SENSOR> DO
+		X GetElectricLoad
+		IF X->_ElectricLoad > 1000 THEN
+			&X->|ELECTRONIC| SwitchOff
+			DISPLAY &X + " exceeded Electric load limit"
+		ENDIF
+	ENDFOR
+ENDAUTOMATE
+
+#********************************COMMAND LINE INSTRUCTIONS *************************************
+
+COMMAND: <DOOR> Close AND |ELECTRONIC| SwitchOff 
+
+COMMAND: <DOOR> Open AND <FAN> SwitchOn IN Top_floor
+
+COMMAND: Door_common1, Door_common2 Open AND Cooler SwitchOn AND LG_Tv SwitchOn AND <LAMP> SwitchOn AND <FAN> SwitchOn IN Common_room
+
+COMMAND:
+	FOR X IN <ROOM> DO
+		X -> <ELECTRIC_LOAD_SENSOR> GetElectricLoad
+		DISPLAY X + ": " + X -> <ELECTRIC_LOAD_SENSOR> -> _ElectricLoad
+	ENDFOR
